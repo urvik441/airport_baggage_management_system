@@ -1,0 +1,89 @@
+Build a full-stack React.js web application for an "Airport Baggage Sharing System".
+
+Project Goal:
+Create a platform where airline passengers can optimize baggage usage by sharing unused baggage capacity with other passengers on the same flight.
+
+Core Concept:
+- Each passenger has a baggage limit (e.g., 20kg).
+- Some passengers carry less baggage (extra capacity).
+- Some passengers carry more baggage (excess weight).
+- The system allows passengers to connect and mutually agree to share baggage space and avoid airline excess fees.
+- The platform earns a commission on transactions.
+
+Tech Requirements:
+- Frontend: React.js (with functional components and hooks)
+- Styling: Tailwind CSS or modern UI library
+- State Management: Context API or Redux (optional)
+- Backend (optional but preferred): Node.js with Express
+- Database: MongoDB or Firebase
+- Real-time Communication: Socket.io or WebSocket for chat
+- Authentication: Simple login/signup (email or ticket number-based)
+
+Core Features:
+
+1. User Authentication:
+   - Users can login/signup using ticket number.
+   - Each ticket number acts as a unique identifier.
+
+2. Room System (Flight-based grouping):
+   - Users enter a flight/ticket number.
+   - If the same flight exists, they join a shared "room".
+   - Otherwise, a new room is created.
+
+3. Baggage Input:
+   - Users input:
+     - Total baggage weight
+     - Allowed baggage limit (default 20kg)
+   - System calculates:
+     - Extra space (if under limit)
+     - Excess baggage (if over limit)
+
+4. Matching System:
+   - Show list of users in the same room:
+     - Users with extra capacity
+     - Users with excess baggage
+   - Display:
+     - Available extra weight
+     - Required extra weight
+
+5. Request System:
+   - A user with excess baggage can send a request to a user with extra capacity.
+   - The receiving user can Accept or Reject.
+
+6. Chat System:
+   - After request acceptance:
+     - Both users enter a private chat room.
+     - Real-time messaging enabled.
+
+7. Payment Simulation:
+   - Example:
+     - Airline charges ₹200/kg
+     - Platform offers ₹80–₹150/kg (cheaper alternative)
+   - Users agree on price per kg.
+   - Simulate payment inside app (no real payment gateway required).
+   - Platform deducts commission (e.g., 10–20%).
+
+8. Wallet System:
+   - Users with extra baggage earn wallet credits.
+   - Users paying for baggage deduct from wallet.
+
+9. UI Pages:
+   - Login / Signup Page
+   - Dashboard (enter ticket, baggage details)
+   - Room Page (list of passengers)
+   - Request/Match Page
+   - Chat Page
+   - Wallet/Transaction Page
+
+10. Additional Features (optional but preferred):
+   - Notifications for requests
+   - Status indicators (available, busy)
+   - Clean and responsive UI
+   - Error handling and validations
+
+Deliverables:
+- Clean folder structure
+- Reusable components
+- Proper state handling
+- Mock data or simple backend API
+- Comments in code for clarity
