@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { Plane, Wallet, LogOut, User } from 'lucide-react';
+import { Plane, Wallet, LogOut, User, Shield } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAppContext();
@@ -22,6 +22,12 @@ const Navbar = () => {
           <span>BaggageShare</span>
         </Link>
         <div className="flex items-center space-x-6">
+          {user.role === 'admin' && (
+            <Link to="/admin" className="hover:text-blue-200 flex items-center space-x-1 font-bold text-yellow-300">
+              <Shield size={18} />
+              <span>Admin</span>
+            </Link>
+          )}
           <Link to="/" className="hover:text-blue-200 flex items-center space-x-1">
             <span>Dashboard</span>
           </Link>
@@ -31,7 +37,7 @@ const Navbar = () => {
           </Link>
           <div className="flex items-center space-x-2 bg-blue-700 px-3 py-1 rounded-full text-sm">
             <User size={14} />
-            <span>{user.ticketNumber}</span>
+            <span>{user.ticketNumber || user.username}</span>
           </div>
           <button onClick={handleLogout} className="hover:text-red-200 flex items-center space-x-1">
             <LogOut size={18} />

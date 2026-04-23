@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAppContext } from '../context/AppContext';
-import { Luggage, Send } from 'lucide-react';
+import { Luggage, Send, Ticket } from 'lucide-react';
 
 const Dashboard = () => {
   const { user, setUser, setFlightData, setPassengers, socket } = useAppContext();
   const [flightNumber, setFlightNumber] = useState('');
+  const [ticketNumber, setTicketNumber] = useState('');
   const [totalWeight, setTotalWeight] = useState('');
   const [limit, setLimit] = useState('20');
   const [loading, setLoading] = useState(false);
@@ -14,12 +15,13 @@ const Dashboard = () => {
 
   const handleJoinRoom = async (e) => {
     e.preventDefault();
-    if (!flightNumber || !totalWeight || !limit) return;
+    if (!flightNumber || !ticketNumber || !totalWeight || !limit) return;
 
     setLoading(true);
     try {
       const payload = {
-        ticketNumber: user.ticketNumber,
+        username: user.username,
+        ticketNumber: ticketNumber.toUpperCase(),
         flightNumber: flightNumber.toUpperCase(),
         totalWeight: parseFloat(totalWeight),
         limit: parseFloat(limit)
@@ -33,7 +35,7 @@ const Dashboard = () => {
       
       if (socket) {
         socket.emit('join_flight', { 
-            ticketNumber: user.ticketNumber, 
+            ticketNumber: ticketNumber.toUpperCase(), 
             flightNumber: flightNumber.toUpperCase() 
         });
       }
@@ -54,8 +56,8 @@ const Dashboard = () => {
             <Luggage size={64} />
           </div>
           <div className="p-8 w-full">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Welcome, {user.ticketNumber}</h2>
-            <p className="text-gray-600 mb-8">Enter your flight details to start sharing baggage space.</p>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Welcome, {user.username}</h2>
+            <p className="text-gray-600 mb-8">Enter your ticket and flight details to start sharing baggage space.</p>
 
             <form onSubmit={handleJoinRoom} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -71,6 +73,22 @@ const Dashboard = () => {
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Ticket Number</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="e.g. TKT12345"
+                      value={ticketNumber}
+                      onChange={(e) => setTicketNumber(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Baggage Limit (kg)</label>
                   <input
                     type="number"
@@ -80,11 +98,8 @@ const Dashboard = () => {
                     onChange={(e) => setLimit(e.target.value)}
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Current Total Weight (kg)</label>
-                <div className="relative">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Current Total Weight (kg)</label>
                   <input
                     type="number"
                     required
