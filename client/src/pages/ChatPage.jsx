@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useAppContext } from '../context/AppContext';
 import { Send, ArrowLeft, CreditCard } from 'lucide-react';
 
 const ChatPage = () => {
   const { roomId } = useParams();
-  const { user, socket } = useAppContext();
+  const { user, setUser, socket, passengers } = useAppContext();
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [price, setPrice] = useState('100');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
 
@@ -17,12 +19,26 @@ const ChatPage = () => {
   };
 
   useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const response = await axios.get(`http://localhost:5000/api/chat/messages/${roomId}`);
+        setMessages(response.data);
+      } catch (err) {
+        console.error("Failed to fetch chat history", err);
+      }
+    };
+
     if (socket) {
       socket.emit('join_chat', roomId);
+      fetchHistory();
       
       socket.on('receive_message', (msg) => {
         setMessages(prev => [...prev, msg]);
       });
+
+      return () => {
+        socket.off('receive_message');
+      };
     }
   }, [socket, roomId]);
 
@@ -47,9 +63,39 @@ const ChatPage = () => {
     setMessage('');
   };
 
-  const simulatePayment = () => {
-    alert(`Payment of ₹${price} simulated successfully! Platform commission (10%) deducted.`);
-    navigate('/wallet');
+  const processPayment = async () => {
+    if (!user || user.excessWeight <= 0) {
+      alert("Only the user with excess weight (the sender) needs to pay.");
+      return;
+    }
+
+    // Determine who the receiver is from the chat participants
+    const receiver = passengers.find(p => p.ticketNumber !== user.ticketNumber && p.extraSpace > 0);
+    
+    if (!receiver) {
+      alert("Could not identify the receiver.");
+      return;
+    }
+
+    const amount = parseFloat(price) * user.excessWeight;
+    
+    setLoading(true);
+    try {
+      const response = await axios.post('http://localhost:5000/api/payment/transfer', {
+        payerTicket: user.ticketNumber,
+        receiverTicket: receiver.ticketNumber,
+        amount: amount
+      });
+      
+      // Update local user state with new wallet balance
+      setUser({ ...user, wallet: response.data.payerWallet });
+      alert(`Payment of ₹${amount} successful! Platform commission (10%) deducted from receiver.`);
+      navigate('/wallet');
+    } catch (err) {
+      alert(err.response?.data?.error || "Payment failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -70,18 +116,22 @@ const ChatPage = () => {
                 <span className="text-xs mr-2">Agreed Price/kg:</span>
                 <input 
                     type="number" 
+                    min="1"
                     className="w-20 px-2 py-1 text-black text-sm rounded" 
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
                 />
             </div>
-            <button 
-                onClick={simulatePayment}
-                className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg text-sm font-bold flex items-center space-x-2"
-            >
-                <CreditCard size={16} />
-                <span>Pay Now</span>
-            </button>
+            {user?.excessWeight > 0 && (
+                <button 
+                    onClick={processPayment}
+                    disabled={loading}
+                    className="bg-green-500 hover:bg-green-600 disabled:bg-gray-400 px-4 py-2 rounded-lg text-sm font-bold flex items-center space-x-2 transition"
+                >
+                    <CreditCard size={16} />
+                    <span>{loading ? 'Processing...' : 'Pay Now'}</span>
+                </button>
+            )}
         </div>
       </div>
 
@@ -100,7 +150,7 @@ const ChatPage = () => {
               <p className="text-xs opacity-75 mb-1">{msg.senderName}</p>
               <p className="text-sm">{msg.text}</p>
               <p className="text-[10px] text-right mt-1 opacity-50">
-                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>
             </div>
           </div>

@@ -11,7 +11,36 @@ const Dashboard = () => {
   const [totalWeight, setTotalWeight] = useState('');
   const [limit, setLimit] = useState('20');
   const [loading, setLoading] = useState(false);
+  const [calculation, setCalculation] = useState(null);
   const navigate = useNavigate();
+
+  const calculateFees = () => {
+    const weight = parseFloat(totalWeight);
+    const lmt = parseFloat(limit);
+    if (isNaN(weight) || isNaN(lmt)) return;
+
+    if (weight < lmt) {
+      const extra = lmt - weight;
+      setCalculation({
+        type: 'earn',
+        amount: extra * 80,
+        diff: extra
+      });
+    } else if (weight > lmt) {
+      const excess = weight - lmt;
+      setCalculation({
+        type: 'pay',
+        amount: excess * 100,
+        diff: excess
+      });
+    } else {
+      setCalculation({
+        type: 'none',
+        amount: 0,
+        diff: 0
+      });
+    }
+  };
 
   const handleJoinRoom = async (e) => {
     e.preventDefault();
@@ -92,6 +121,7 @@ const Dashboard = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Baggage Limit (kg)</label>
                   <input
                     type="number"
+                    min="0"
                     required
                     className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
                     value={limit}
@@ -102,6 +132,7 @@ const Dashboard = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Current Total Weight (kg)</label>
                   <input
                     type="number"
+                    min="0"
                     required
                     className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
                     placeholder="e.g. 25"
@@ -110,6 +141,40 @@ const Dashboard = () => {
                   />
                 </div>
               </div>
+
+              <div className="flex justify-center">
+                <button
+                    type="button"
+                    onClick={calculateFees}
+                    className="text-blue-600 font-bold hover:underline flex items-center gap-2"
+                >
+                    Calculate Potential Savings/Earnings
+                </button>
+              </div>
+
+              {calculation && (
+                <div className={`p-4 rounded-lg border ${
+                    calculation.type === 'earn' ? 'bg-green-50 border-green-200 text-green-800' :
+                    calculation.type === 'pay' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' :
+                    'bg-gray-50 border-gray-200 text-gray-800'
+                }`}>
+                    {calculation.type === 'earn' && (
+                        <p className="font-medium text-center">
+                            You have <span className="font-bold">{calculation.diff}kg</span> extra space! 
+                            You could earn up to <span className="text-xl font-bold">₹{calculation.amount}</span> by sharing it.
+                        </p>
+                    )}
+                    {calculation.type === 'pay' && (
+                        <p className="font-medium text-center">
+                            You have <span className="font-bold">{calculation.diff}kg</span> excess weight. 
+                            Estimated cost to share: <span className="text-xl font-bold">₹{calculation.amount}</span> (vs ₹{calculation.diff * 200} at airline).
+                        </p>
+                    )}
+                    {calculation.type === 'none' && (
+                        <p className="font-medium text-center text-gray-600">You are exactly at the weight limit!</p>
+                    )}
+                </div>
+              )}
 
               <div className="pt-4">
                 <button

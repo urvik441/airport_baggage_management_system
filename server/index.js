@@ -59,10 +59,22 @@ io.on('connection', (socket) => {
         const chatRoomId = `chat_${requestId}`;
         request.chatRoomId = chatRoomId;
         await request.save();
-        io.to(request.flightNumber).emit('request_accepted', { ...request._doc, chatRoomId });
+        // Broadcast to everyone in the flight room so both parties get it
+        io.to(request.flightNumber).emit('request_accepted', { 
+            id: request._id,
+            from: request.from, 
+            to: request.to, 
+            chatRoomId: chatRoomId,
+            status: 'accepted'
+        });
       } else {
         await request.save();
-        io.to(request.flightNumber).emit('request_rejected', request);
+        io.to(request.flightNumber).emit('request_rejected', {
+            id: request._id,
+            from: request.from,
+            to: request.to,
+            status: 'rejected'
+        });
       }
     }
   });
@@ -130,6 +142,7 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.post('/api/flight/join', async (req, res) => {
     const { username, ticketNumber, flightNumber, totalWeight, limit } = req.body;
+    if (totalWeight < 0 || limit < 0) return res.status(400).json({ error: 'Weights cannot be negative' });
     try {
         const extraSpace = Math.max(0, limit - totalWeight);
         const excessWeight = Math.max(0, totalWeight - limit);
@@ -148,6 +161,21 @@ app.post('/api/flight/join', async (req, res) => {
     }
 });
 
+// Payment API
+app.post('/api/payment/transfer', async (req, res) => {
+    // ... (existing code)
+});
+
+// Chat History API
+app.get('/api/chat/messages/:roomId', async (req, res) => {
+  try {
+    const messages = await Message.find({ roomId: req.params.roomId }).sort({ createdAt: 1 });
+    res.json(messages);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Admin API Routes
 app.get('/api/admin/stats', async (req, res) => {
     try {
@@ -160,6 +188,30 @@ app.get('/api/admin/stats', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    const users = await User.find().sort({ createdAt: -1 });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/admin/users/:id/role', async (req, res) => {
+  const { role } = req.body;
+  if (!['user', 'admin'].includes(role)) {
+    return res.status(400).json({ error: 'Invalid role' });
+  }
+
+  try {
+    const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 const PORT = process.env.PORT || 5000;

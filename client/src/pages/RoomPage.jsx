@@ -12,16 +12,6 @@ const RoomPage = () => {
     if (!flightData) navigate('/');
   }, [flightData, navigate]);
 
-  useEffect(() => {
-    if (socket) {
-      socket.on('request_accepted', (data) => {
-        if (data.from === user.ticketNumber || data.to === user.ticketNumber) {
-          navigate(`/chat/${data.chatRoomId}`);
-        }
-      });
-    }
-  }, [socket, user, navigate]);
-
   const sendRequest = (targetUser) => {
     if (socket) {
       const weight = user.excessWeight > 0 ? user.excessWeight : 0;
@@ -38,7 +28,7 @@ const RoomPage = () => {
   const handleResponse = (requestId, status) => {
     if (socket) {
       socket.emit('respond_request', { requestId, status });
-      setNotifications(notifications.filter(n => n.id !== requestId));
+      setNotifications(notifications.filter(n => n._id !== requestId));
     }
   };
 
@@ -80,13 +70,13 @@ const RoomPage = () => {
             <span>New Requests</span>
           </h3>
           {notifications.map(notif => (
-            <div key={notif.id} className="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm">
+            <div key={notif._id} className="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm">
               <span className="text-sm font-medium text-gray-700">User {notif.from} wants to share {notif.weight}kg</span>
               <div className="flex space-x-2">
-                <button onClick={() => handleResponse(notif.id, 'accepted')} className="p-1 bg-green-100 text-green-600 rounded-full hover:bg-green-200">
+                <button onClick={() => handleResponse(notif._id, 'accepted')} className="p-1 bg-green-100 text-green-600 rounded-full hover:bg-green-200">
                   <Check size={20} />
                 </button>
-                <button onClick={() => handleResponse(notif.id, 'rejected')} className="p-1 bg-red-100 text-red-600 rounded-full hover:bg-red-200">
+                <button onClick={() => handleResponse(notif._id, 'rejected')} className="p-1 bg-red-100 text-red-600 rounded-full hover:bg-red-200">
                   <X size={20} />
                 </button>
               </div>
