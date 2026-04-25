@@ -9,8 +9,14 @@ export const AppProvider = ({ children }) => {
   const [passengers, setPassengers] = useState([]);
   const [socket, setSocket] = useState(null);
   const [notifications, setNotifications] = useState([]);
+  const [pendingRedirect, setPendingRedirect] = useState(null);
 
   useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+
     const newSocket = io('http://localhost:5000');
     setSocket(newSocket);
 
@@ -28,6 +34,21 @@ export const AppProvider = ({ children }) => {
           setNotifications(prev => [...prev, request]);
         }
       });
+
+      socket.on('request_accepted', (data) => {
+        console.log('Request accepted event received:', data);
+        console.log('Current User Ticket:', user.ticketNumber);
+        if (data.from === user.ticketNumber || data.to === user.ticketNumber) {
+          console.log('Match found! Redirecting to chat:', data.chatRoomId);
+          setPendingRedirect(`/chat/${data.chatRoomId}`);
+        }
+      });
+
+      return () => {
+        socket.off('flight_update');
+        socket.off('new_request');
+        socket.off('request_accepted');
+      };
     }
   }, [socket, user]);
 
@@ -39,6 +60,9 @@ export const AppProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
+    setFlightData(null);
+    setPassengers([]);
+    setNotifications([]);
   };
 
   return (
@@ -48,6 +72,7 @@ export const AppProvider = ({ children }) => {
       passengers, setPassengers, 
       socket, 
       notifications, setNotifications,
+      pendingRedirect, setPendingRedirect,
       login, logout 
     }}>
       {children}
